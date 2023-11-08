@@ -23,6 +23,10 @@ io.on("connection", (socket) => {
     console.log(args);
   })
 
+  socket.on("EnviarCodiPeli", (args) => {
+    console.log(args);
+  })
+
   socket.on("howdy", (arg) => {
     console.log(arg);
   })
