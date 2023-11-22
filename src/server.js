@@ -14,34 +14,24 @@ app.use(cors());
 app.use(express.json());
 app.listen(port, () => {
   console.log(`El servidor està escoltant el port::${port}`);
-})
+});
+
 let videos = [];
 
-let files = fs.readdirSync("C:\\Users\\marcr\\OneDrive\\Escritorio\\1r DAM\\LEA\\UF1- Entorns de desenvolupament\\VideoPlayerServer\\src\\assets");
+let files = fs.readdirSync(__dirname + "\\assets");
 
 files.forEach(element => {
   if (element.split('.')[1] === 'mp4'
     || element.split('.')[1] === 'ogg') {
 
       videos.push({
-        title: element.split('.')[0].replace('_', " ").split('720p')[0],
+        title: element.split('.')[0].replace('_', " ").split('720p')[0].replace("-", " "),
         url: "assets/".concat(element),
         opened: false
       });
   }
 })
 
-// for (let i = 0; i < videos.length; i++) {
-//   console.log("TESTESTTESTESTTESTESTTESTESTTESTESTTESTEST");
-//   console.log(videos[i]);
-// }
-
-// files.forEach(element => {
-//   if (element.split('.')[1] === 'mp4'
-//     || element.split('.')[1] === 'ogg') {
-//       console.log(element);
-//   }
-// })
 
 io.on("connection", (socket) => {
   socket.emit("hello", "world");
@@ -50,31 +40,43 @@ io.on("connection", (socket) => {
     socket.emit("VideoList", videos);
   })
 
+  let codi = generateRandomString();
+
   //First angular client calls requestCodiVideo
   socket.on("RequestVideoVerification", (args) => {
     console.log(args);
-
-    let codi = generateRandomString();
     socket.emit("CodiVideo", codi)
 
-    socket.on("EnviarCodiPeli", (androidCodi) => {
-      console.log(androidCodi);
-      if (codi === androidCodi)
-        socket.emit("VeifiedCorrectly", true);
-    })
+    // socket.on("EnviarCodiPeli", (androidCodi) => {
+    //   console.log(androidCodi);
+    //   if (codi === androidCodi)
+    //     io.emit("VeifiedCorrectly", true);
+    // })
   })
 
   socket.on("howdy", (arg) => {
     console.log(arg);
   })
 
+  socket.on("EnviarCodiPeli", (androidCodi) => {
+    console.log("Android code: " + androidCodi);
+    if (codi === androidCodi)
+      io.emit("VerifiedCorrectly", true);
+  })
+
+  // socket.on("EnviarCodiPeli", (androidCodi) => {
+  //   console.log(androidCodi);
+  // })
+
+  io.emit("HOLA", "GIMRSHGIBTESDFZHGVS")
+  // if (codi === androidCodi)
+  //   socket.emit("VeifiedCorrectly", true);
+
+
   // socket.on("disconnect", (reason) => {
   //   console.log(`socket ${socket.id} disconnected due to ${reason}`);
   // })
 
-  //crear array d'objectes
-  //Object fields: title, url
-  //format of the url is "assets/video.mp4"
 })
 
 
