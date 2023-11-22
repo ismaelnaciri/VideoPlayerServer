@@ -17,7 +17,7 @@ app.listen(port, () => {
 })
 let videos = [];
 
-let files = fs.readdirSync("C:\\IdeaProjects\\2nDAM\\VideoPlayerServer\\src\\assets");
+let files = fs.readdirSync("C:\\Users\\marcr\\OneDrive\\Escritorio\\1r DAM\\LEA\\UF1- Entorns de desenvolupament\\VideoPlayerServer\\src\\assets");
 
 files.forEach(element => {
   if (element.split('.')[1] === 'mp4'
