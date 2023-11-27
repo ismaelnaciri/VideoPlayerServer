@@ -4,6 +4,7 @@ const port = 3000;
 const io = new Server(8888);
 const app = express();
 const fs = require('fs');
+const path = require('path');
 
 const cors = require('cors');
 
@@ -12,9 +13,11 @@ const cors = require('cors');
 app.use(cors());
 
 app.use(express.json());
+app.use(express.static("assets"));
 app.listen(port, () => {
   console.log(`El servidor està escoltant el port::${port}`);
 });
+
 
 let videos = [];
 
@@ -25,7 +28,7 @@ files.forEach(element => {
     || element.split('.')[1] === 'ogg') {
 
       videos.push({
-        title: element.split('.')[0].replace('_', " ").split('720p')[0].replace("-", " "),
+        title: element,
         url: "assets/".concat(element),
         opened: false
       });
@@ -33,12 +36,14 @@ files.forEach(element => {
 })
 
 
+//Cannot nest socket.on!!!
+
 io.on("connection", (socket) => {
   socket.emit("hello", "world");
 
   socket.on("RequestVideo", () => {
     socket.emit("VideoList", videos);
-  })
+  });
 
   let codi = generateRandomString();
 
@@ -47,35 +52,31 @@ io.on("connection", (socket) => {
     console.log(args);
     socket.emit("CodiVideo", codi)
 
-    // socket.on("EnviarCodiPeli", (androidCodi) => {
-    //   console.log(androidCodi);
-    //   if (codi === androidCodi)
-    //     io.emit("VeifiedCorrectly", true);
-    // })
-  })
+  });
 
   socket.on("howdy", (arg) => {
     console.log(arg);
-  })
+  });
 
   socket.on("EnviarCodiPeli", (androidCodi) => {
+    console.log("Server code: " + codi);
     console.log("Android code: " + androidCodi);
-    if (codi === androidCodi)
-      io.emit("VerifiedCorrectly", true);
-  })
+    if (codi === androidCodi) {
+      console.log("WORKS?" ,codi===androidCodi)
+      socket.emit("VerifiedCorrectly", "true");
+    }
+  });
 
-  // socket.on("EnviarCodiPeli", (androidCodi) => {
-  //   console.log(androidCodi);
-  // })
-
-  io.emit("HOLA", "GIMRSHGIBTESDFZHGVS")
-  // if (codi === androidCodi)
-  //   socket.emit("VeifiedCorrectly", true);
-
-
-  // socket.on("disconnect", (reason) => {
-  //   console.log(`socket ${socket.id} disconnected due to ${reason}`);
-  // })
+  //socket.on("VideoArrayindex", (video) => {
+  //     app.use('/', (req, res) => {
+  //       res.sendFile(
+  //         video.title, {
+  //           root: path.join(__dirname + '/assets/')
+  //         }
+  //         // path.join(__dirname, '/assets/' + videos[position].title)
+  //       );
+  //     });
+  //   });
 
 })
 
