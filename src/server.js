@@ -63,7 +63,7 @@ io.on("connection", (socket) => {
     console.log("Android code: " + androidCodi);
     if (codi === androidCodi) {
       console.log("WORKS?" ,codi===androidCodi)
-      socket.emit("VerifiedCorrectly", "true");
+      socket.emit("VerifiedCorrectly", true);
     }
   });
 
