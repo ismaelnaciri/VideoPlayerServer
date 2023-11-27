@@ -20,21 +20,31 @@ app.listen(port, () => {
 
 
 let videos = [];
+let images = [];
 
-let files = fs.readdirSync(__dirname + "\\assets");
+let filesVid = fs.readdirSync(__dirname + "\\assets\\videos");
+let filesImg = fs.readdirSync(__dirname + "\\assets\\imgs");
 
-files.forEach(element => {
+
+// filesImg.forEach(element => {
+//   if (element.split('.')[1] === 'png') )
+//   // || element
+// });
+
+
+filesVid.forEach(element => {
   if (element.split('.')[1] === 'mp4'
     || element.split('.')[1] === 'ogg') {
 
       videos.push({
         title: element,
-        url: "assets/".concat(element),
-        opened: false
+        videoUrl: "videos/" + element,
+        opened: false,
       });
   }
-})
+});
 
+let temp;
 
 //Cannot nest socket.on!!!
 
@@ -45,24 +55,21 @@ io.on("connection", (socket) => {
     socket.emit("VideoList", videos);
   });
 
-  let codi = generateRandomString();
-
   //First angular client calls requestCodiVideo
   socket.on("RequestVideoVerification", (args) => {
+    let codi = generateRandomString();
+    temp = codi;
     console.log(args);
     socket.emit("CodiVideo", codi)
 
   });
 
-  socket.on("howdy", (arg) => {
-    console.log(arg);
-  });
 
   socket.on("EnviarCodiPeli", (androidCodi) => {
-    console.log("Server code: " + codi);
+    console.log("Server code: " + temp);
     console.log("Android code: " + androidCodi);
-    if (codi === androidCodi) {
-      console.log("WORKS?" ,codi===androidCodi)
+    if (temp === androidCodi) {
+      console.log("WORKS?" ,temp===androidCodi)
       socket.emit("VerifiedCorrectly", true);
     }
   });
