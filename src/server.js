@@ -1,7 +1,8 @@
 const express = require('express');
 const {Server} = require("socket.io");
 const port = 3000;
-const io = new Server(8888);
+const io = new Server(8887);
+const ioAndroid = new Server(8888);
 const app = express();
 const fs = require('fs');
 const path = require('path');
@@ -25,6 +26,9 @@ let images = [];
 let filesVid = fs.readdirSync(__dirname + "\\assets\\videos");
 let filesImg = fs.readdirSync(__dirname + "\\assets\\imgs");
 
+let socketAndroid = undefined;
+let socketAngular = undefined;
+
 
 // filesImg.forEach(element => {
 //   if (element.split('.')[1] === 'png') )
@@ -40,52 +44,50 @@ filesVid.forEach(element => {
         title: element,
         videoUrl: "videos/" + element,
         opened: false,
+        verified: undefined
       });
   }
 });
 
-let temp;
+let serverCode;
 
 //Cannot nest socket.on!!!
 
-io.on("connection", (socket) => {
-  socket.emit("hello", "world");
+ioAndroid.on("connection", (socket) => {
+  socketAndroid = socket;
 
-  socket.on("RequestVideo", () => {
-    socket.emit("VideoList", videos);
+  socketAndroid.on("EnviarCodiPeli", (androidCodi) => {
+    console.log("Server code: " + serverCode);
+    console.log("Android code: " + androidCodi);
+
+    if (serverCode === androidCodi) {
+      console.log("WORKS?" ,serverCode===androidCodi)
+      socketAngular.emit("VerifiedCorrectly", true);
+    } else {
+      socketAngular.emit("VerifiedCorrectly", false);
+    }
+  });
+});
+
+
+io.on("connection", (socket) => {
+  socketAngular = socket;
+  socketAngular.emit("hello", "world");
+  //  socket.emit("VerifiedCorrectly", true);
+
+  socketAngular.on("RequestVideo", () => {
+    socketAngular.emit("VideoList", videos);
   });
 
   //First angular client calls requestCodiVideo
-  socket.on("RequestVideoVerification", (args) => {
+  socketAngular.on("RequestVideoVerification", (args) => {
     let codi = generateRandomString();
-    temp = codi;
+    serverCode = codi;
     console.log(args);
-    socket.emit("CodiVideo", codi)
+    socketAngular.emit("CodiVideo", codi)
 
   });
-
-
-  socket.on("EnviarCodiPeli", (androidCodi) => {
-    console.log("Server code: " + temp);
-    console.log("Android code: " + androidCodi);
-    if (temp === androidCodi) {
-      console.log("WORKS?" ,temp===androidCodi)
-      socket.emit("VerifiedCorrectly", true);
-    }
-  });
-
-  //socket.on("VideoArrayindex", (video) => {
-  //     app.use('/', (req, res) => {
-  //       res.sendFile(
-  //         video.title, {
-  //           root: path.join(__dirname + '/assets/')
-  //         }
-  //         // path.join(__dirname, '/assets/' + videos[position].title)
-  //       );
-  //     });
-  //   });
-
-})
+});
 
 
 function generateRandomString() {
