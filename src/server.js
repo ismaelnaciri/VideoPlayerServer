@@ -1,8 +1,6 @@
 const express = require('express');
 const {Server} = require("socket.io");
 const port = 3000;
-// const io = new Server(8887);
-// const ioAndroid = new Server(8888);
 
 const io = new Server(8888);
 
@@ -28,9 +26,6 @@ let images = [];
 
 let filesVid = fs.readdirSync(__dirname + "\\assets\\videos");
 let filesImg = fs.readdirSync(__dirname + "\\assets\\imgs");
-
-let socketAndroid = undefined;
-let socketAngular = undefined;
 
 
 // filesImg.forEach(element => {
@@ -68,7 +63,7 @@ io.on("connection", (socket) => {
     let codi = generateRandomString();
     serverCode = codi;
     console.log(args);
-    socket.emit("CodiVideo", codi)
+    socket.emit("CodiVideo", codi);
   });
 
   socket.on("EnviarCodiPeli", (androidCodi) => {
@@ -81,43 +76,8 @@ io.on("connection", (socket) => {
     } else {
       io.to("verificationRoom").emit("VerifiedCorrectly", false);
     }
-  })
-})
-
-// ioAndroid.on("connection", (socket) => {
-//   socketAndroid = socket;
-//
-//   socketAndroid.on("EnviarCodiPeli", (androidCodi) => {
-//     console.log("Server code: " + serverCode);
-//     console.log("Android code: " + androidCodi);
-//
-//     if (serverCode === androidCodi) {
-//       console.log("WORKS?" ,serverCode===androidCodi)
-//       socketAngular.emit("VerifiedCorrectly", true);
-//     } else {
-//       socketAngular.emit("VerifiedCorrectly", false);
-//     }
-//   });
-// });
-
-
-// io.on("connection", (socket) => {
-//   socketAngular = socket;
-//   socketAngular.emit("hello", "world");
-//   //  socket.emit("VerifiedCorrectly", true);
-//
-//   socketAngular.on("RequestVideo", () => {
-//     socketAngular.emit("VideoList", videos);
-//   });
-//
-//   //First angular client calls requestCodiVideo
-//   socketAngular.on("RequestVideoVerification", (args) => {
-//     let codi = generateRandomString();
-//     serverCode = codi;
-//     console.log(args);
-//     socketAngular.emit("CodiVideo", codi)
-//   });
-// });
+  });
+});
 
 
 function generateRandomString() {
@@ -131,4 +91,5 @@ function generateRandomString() {
 
   return randomString;
 }
+
 
