@@ -21,16 +21,37 @@ app.listen(port, () => {
 });
 
 
-let videos = [];
-let images = [];
+let videos    = [];
+let webAssets = [];
+let images    = [];
 
 let filesVid = fs.readdirSync(__dirname + "\\assets\\videos");
-let filesImg = fs.readdirSync(__dirname + "\\assets\\imgs");
+let filesWebAssets = fs.readdirSync(__dirname + "\\assets\\webAssets");
+let filesMovieImages = fs.readdirSync(__dirname + "\\assets\\imgs");
 
 
-// filesImg.forEach(element => {
-//   if (element.split('.')[1] === 'png') )
-//   // || element
+// filesWebAssets.forEach(element => {
+//   if (element.split('.')[1] === 'png'
+//     || element.split('.')[1] === 'jpg'
+//     || element.split('.')[1] === 'svg'
+//     || element.split('.')[1] === 'webp')
+//   {
+//     webAssets.push({
+//       title: element,
+//       assetUrl: "webAssets/" + element
+//     })
+//   }
+// });
+//
+// filesMovieImages.forEach(element => {
+//   if (element.split('.')[1] === 'png'
+//     || element.split('.')[1] === 'jpg')
+//   {
+//     images.push({
+//       title: element,
+//       imageUrl: "imgs/" + element
+//     })
+//   }
 // });
 
 
@@ -42,10 +63,11 @@ filesVid.forEach(element => {
         title: element,
         videoUrl: "videos/" + element,
         opened: false,
-        verified: undefined
+        verified: undefined,
       });
   }
 });
+
 
 let serverCode;
 
@@ -54,6 +76,10 @@ let serverCode;
 io.on("connection", (socket) => {
   socket.join("verificationRoom");
   socket.emit("hello", "world");
+
+  // socket.on("iniWebImages", () => {
+  //   socket.emit("webImages", webAssets)
+  // });
 
   socket.on("RequestVideo", () => {
     socket.emit("VideoList", videos);
@@ -64,6 +90,8 @@ io.on("connection", (socket) => {
     serverCode = codi;
     console.log(args);
     socket.emit("CodiVideo", codi);
+
+    console.log("TEST! XD ISMA MADE BY MIHOYO RIOOT.  |  ", serverCode);
   });
 
   socket.on("EnviarCodiPeli", (androidCodi) => {
