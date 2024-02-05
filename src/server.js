@@ -1,8 +1,9 @@
 const express = require('express');
 const {Server} = require("socket.io");
 const port = 3000;
-const io = new Server(8887);
-const ioAndroid = new Server(8888);
+
+const io = new Server(8888);
+
 const app = express();
 const fs = require('fs');
 const path = require('path');
@@ -20,19 +21,37 @@ app.listen(port, () => {
 });
 
 
-let videos = [];
-let images = [];
+let videos    = [];
+let webAssets = [];
+let images    = [];
 
 let filesVid = fs.readdirSync(__dirname + "\\assets\\videos");
-// let filesImg = fs.readdirSync(__dirname + "\\assets\\imgs");
-
-let socketAndroid = undefined;
-let socketAngular = undefined;
+let filesWebAssets = fs.readdirSync(__dirname + "\\assets\\webAssets");
+let filesMovieImages = fs.readdirSync(__dirname + "\\assets\\imgs");
 
 
-// filesImg.forEach(element => {
-//   if (element.split('.')[1] === 'png') )
-//   // || element
+// filesWebAssets.forEach(element => {
+//   if (element.split('.')[1] === 'png'
+//     || element.split('.')[1] === 'jpg'
+//     || element.split('.')[1] === 'svg'
+//     || element.split('.')[1] === 'webp')
+//   {
+//     webAssets.push({
+//       title: element,
+//       assetUrl: "webAssets/" + element
+//     })
+//   }
+// });
+//
+// filesMovieImages.forEach(element => {
+//   if (element.split('.')[1] === 'png'
+//     || element.split('.')[1] === 'jpg')
+//   {
+//     images.push({
+//       title: element,
+//       imageUrl: "imgs/" + element
+//     })
+//   }
 // });
 
 
@@ -44,48 +63,47 @@ filesVid.forEach(element => {
         title: element,
         videoUrl: "videos/" + element,
         opened: false,
-        verified: undefined
+        verified: undefined,
       });
   }
 });
+
 
 let serverCode;
 
 //Cannot nest socket.on!!!
 
-ioAndroid.on("connection", (socket) => {
-  socketAndroid = socket;
+io.on("connection", (socket) => {
+  socket.join("verificationRoom");
+  socket.emit("hello", "world");
 
-  socketAndroid.on("EnviarCodiPeli", (androidCodi) => {
+  // socket.on("iniWebImages", () => {
+  //   socket.emit("webImages", webAssets)
+  // });
+
+  socket.on("RequestVideo", () => {
+    socket.emit("VideoList", videos);
+  });
+
+  socket.on("RequestVideoVerification", (args) => {
+    let codi = generateRandomString();
+    serverCode = codi;
+    console.log(args);
+    socket.emit("CodiVideo", codi);
+
+    console.log("TEST! XD ISMA MADE BY MIHOYO RIOOT.  |  ", serverCode);
+  });
+
+  socket.on("EnviarCodiPeli", (androidCodi) => {
     console.log("Server code: " + serverCode);
     console.log("Android code: " + androidCodi);
 
     if (serverCode === androidCodi) {
       console.log("WORKS?" ,serverCode===androidCodi)
-      socketAngular.emit("VerifiedCorrectly", true);
+      io.to("verificationRoom").emit("VerifiedCorrectly", true);
     } else {
-      socketAngular.emit("VerifiedCorrectly", false);
+      io.to("verificationRoom").emit("VerifiedCorrectly", false);
     }
-  });
-});
-
-
-io.on("connection", (socket) => {
-  socketAngular = socket;
-  socketAngular.emit("hello", "world");
-  //  socket.emit("VerifiedCorrectly", true);
-
-  socketAngular.on("RequestVideo", () => {
-    socketAngular.emit("VideoList", videos);
-  });
-
-  //First angular client calls requestCodiVideo
-  socketAngular.on("RequestVideoVerification", (args) => {
-    let codi = generateRandomString();
-    serverCode = codi;
-    console.log(args);
-    socketAngular.emit("CodiVideo", codi)
-
   });
 });
 
@@ -101,4 +119,5 @@ function generateRandomString() {
 
   return randomString;
 }
+
 
