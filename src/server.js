@@ -24,7 +24,7 @@ let videos = [];
 let images = [];
 
 let filesVid = fs.readdirSync(__dirname + "\\assets\\videos");
-let filesImg = fs.readdirSync(__dirname + "\\assets\\imgs");
+// let filesImg = fs.readdirSync(__dirname + "\\assets\\imgs");
 
 let socketAndroid = undefined;
 let socketAngular = undefined;
