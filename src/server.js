@@ -4,7 +4,6 @@ const http = require('http');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
-const fs = require('fs');
 const port = 3000;
 
 const io = new Server(8888);
@@ -14,7 +13,6 @@ const fs = require('fs');
 const path = require('path');
 
 const cors = require('cors');
-const mysql = require('mysql2')
 
 //App server can't listen to the same port of sockets
 
@@ -176,18 +174,5 @@ function generateRandomString() {
 
   return randomString;
 }
-
-
-
-//BD connexió:
-const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'patata',
-  database: 'stream_vi'
-});
-
-
-
 
 
