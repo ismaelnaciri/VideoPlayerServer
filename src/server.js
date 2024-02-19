@@ -1,5 +1,10 @@
 const express = require('express');
 const {Server} = require("socket.io");
+const http = require('http');
+const bodyParser = require('body-parser');
+const jwt = require('jsonwebtoken');
+const mysql = require('mysql2');
+const fs = require('fs');
 const port = 3000;
 
 const io = new Server(8888);
@@ -12,14 +17,36 @@ const cors = require('cors');
 
 //App server can't listen to the same port of sockets
 
+const configObj = JSON.parse(fs.readFileSync('ConnexioBD_MySQL', 'utf8'));
+
+const connexioMySQL = mysql.createConnection({
+  database : configObj.database,
+  user : configObj.username,
+  password : configObj.password,
+  host : configObj.host,
+
+});
+
+// con.connect((err) => {
+//   if (err) throw err;
+//   console.log("Conected to MySql");
+// });
+
 app.use(cors());
 
 app.use(express.json());
 app.use(express.static("assets"));
+
+// app.post('/api/aouth', (req, res) => {
+//   if (req.body) {
+//     let
+//   }
+// })
 app.listen(port, () => {
   console.log(`El servidor està escoltant el port::${port}`);
 });
 
+const JWT_SECRET = "bobbyVideoSite"
 
 let videos    = [];
 let webAssets = [];
@@ -29,6 +56,35 @@ let filesVid = fs.readdirSync(__dirname + "\\assets\\videos");
 let filesWebAssets = fs.readdirSync(__dirname + "\\assets\\webAssets");
 let filesMovieImages = fs.readdirSync(__dirname + "\\assets\\imgs");
 
+
+// const server = http.createServer((req, res) => {
+//   const { headers, method, url } = req;
+//   let body = [];
+//
+//   if (req.url === "/auth" && method === "POST") {
+//     req
+//       .on('error', err => {
+//         console.log("Error | ", err);
+//       })
+//       .on('data', chunk => {
+//         body.push(chunk);
+//         console.log(body);
+//
+//         let user = body[0].json();
+//         // user["exp"] = ;
+//         if (user.email === "queryResult.email" && user.password === "queryResult.password") {
+//           let token = jwt.sign(user, JWT_SECRET);
+//
+//           res.status(200).send({
+//             signed_user: user,
+//             token: token
+//           })
+//         }
+//     })
+//   }
+// }).use(bodyParser.json())
+//   .use(cors)
+//   .listen(7777);
 
 // filesWebAssets.forEach(element => {
 //   if (element.split('.')[1] === 'png'
