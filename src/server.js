@@ -58,7 +58,8 @@ app.post('/api/auth', (req, res) => {
       res.status(200).send({
         code: 200,
         message: "Logged in correctly, sending jwt",
-        token: token
+        token: token,
+        user: user
       });
     } else {
       res.status(401).send({
@@ -74,31 +75,31 @@ app.post('/api/auth', (req, res) => {
   }
 });
 
-app.post('/api/register', (req, res) => {
-  if (req.body) {
-    let user = req.body;
-
-    let queryResult = '';
-    if (queryResult.email !== '') {
-      //make insert into database
-
-      user["iat"] = new Date().getTime();
-      user["exp"] = user["iat"] + 31556926;  //value of 1 year in epoch time
-      let token = jwt.sign(user, JWT_SECRET);
-
-      res.status(200).send({
-        code: 200,
-        message: "User created successfully!",
-        token: token
-      });
-    }
-  } else {
-    res.status(400).send({
-      code: 400,
-      message: "Post body cannot be empty!!!!!!!!"
-    });
-  }
-})
+// app.post('/api/register', (req, res) => {
+//   if (req.body) {
+//     let user = req.body;
+//
+//     let queryResult = '';
+//     if (queryResult.email !== '') {
+//       //make insert into database
+//
+//       user["iat"] = new Date().getTime();
+//       user["exp"] = user["iat"] + 31556926;  //value of 1 year in epoch time
+//       let token = jwt.sign(user, JWT_SECRET);
+//
+//       res.status(200).send({
+//         code: 200,
+//         message: "User created successfully!",
+//         token: token
+//       });
+//     }
+//   } else {
+//     res.status(400).send({
+//       code: 400,
+//       message: "Post body cannot be empty!!!!!!!!"
+//     });
+//   }
+// })
 
 
 let videos = [];
@@ -202,7 +203,8 @@ io.on("connection", (socket) => {
   //     socket.emit({
   //       code: 200,
   //       message: "Logged in correctly, sending token.",
-  //       data: token
+  //       token: token,
+  //       user: user
   //     });
   //   } else {
   //     socket.emit({
