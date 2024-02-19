@@ -31,21 +31,42 @@ const connexioMySQL = mysql.createConnection({
 //   console.log("Conected to MySql");
 // });
 
+const JWT_SECRET = "bobbyVideoSite";
+
 app.use(cors());
 
 app.use(express.json());
 app.use(express.static("assets"));
-
-// app.post('/api/aouth', (req, res) => {
-//   if (req.body) {
-//     let
-//   }
-// })
 app.listen(port, () => {
   console.log(`El servidor està escoltant el port::${port}`);
 });
 
-const JWT_SECRET = "bobbyVideoSite"
+//Option 1 with express post
+app.post('/api/aouth', (req, res) => {
+  if (req.body) {
+    let user = req.body;
+    console.log("user | ", user);
+    let queryResult = '';
+
+    if (queryResult.email === user.email && queryResult.password === user.password) {
+      user["iat"] = new Date().getTime();
+      user["exp"] = user["iat"] + 31556926;  //value of 1 year in epoch time
+      let token = jwt.sign(user, JWT_SECRET);
+
+      res.status(200).send({
+        code: 200,
+        message: "Logged in correctly, sending jwt",
+        token: token
+      });
+    } else {
+      res.status(401).send({
+        code: 401,
+        message: "Wrong credentials. If the issue persists, please contact with support."
+      })
+    }
+  }
+});
+
 
 let videos    = [];
 let webAssets = [];
@@ -123,17 +144,39 @@ filesVid.forEach(element => {
   }
 });
 
-
 let serverCode;
 
 //Cannot nest socket.on!!!
 
-io.on("connection", (socket) => {
+io.on("connection",(socket) => {
   socket.join("verificationRoom");
   socket.emit("hello", "world");
 
   // socket.on("iniWebImages", () => {
   //   socket.emit("webImages", webAssets)
+  // });
+
+  //Option 2 sockets jwt
+  // socket.on('userCredentials', (userCredentials) => {
+  //   //Make bd query here
+  //   let queryResult = '';
+  //
+  //   if (queryResult.email === userCredentials.email && queryResult.password === userCredentials.password) {
+  //     userCredentials["iat"] = new Date().getTime();
+  //     userCredentials["exp"] = userCredentials["iat"] + 31556926;  //value of 1 year in epoch time
+  //     let token = jwt.sign(userCredentials, JWT_SECRET);
+  //
+  //     socket.emit({
+  //       code: 200,
+  //       message: "Logged in correctly, sending token.",
+  //       data: token
+  //     });
+  //   } else {
+  //     socket.emit({
+  //       code: 401,
+  //       message: "Wrong credentials. If the problem persists contact with support"
+  //     });
+  //   }
   // });
 
   socket.on("RequestVideo", () => {
