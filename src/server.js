@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
 const port = 3000;
 
+
 const io = new Server(8888);
 
 const app = express();
@@ -14,6 +15,9 @@ const path = require('path');
 
 const cors = require('cors');
 
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+// app.use(cors)
 //App server can't listen to the same port of sockets
 
 const configObj = JSON.parse(fs.readFileSync('ConnexioBD_MySQL', 'utf8'));
@@ -25,6 +29,34 @@ const connexioMySQL = mysql.createConnection({
   host : configObj.host,
 
 });
+
+app.post('/login', (req, res) => {
+  console.log("login")
+  const { email, passw } = req.body;
+
+  console.log(email + " " + passw)
+
+  const consulta = `SELECT * FROM user WHERE user = '${email}' AND password = '${passw}'`;
+
+  connexioMySQL.query(consulta, (error, resultados) => {
+    if (error) {
+      res.status(500).json({ success: false, message: 'Error en la consulta SQL' });
+      console.log("Error")
+    } else {
+      if (resultados.length > 0) {
+        res.status(200).json({ success: true, message: 'Inicio de sesión correcto' });
+        console.log("good")
+        console.log(resultados)
+
+      } else {
+        res.status(401).json({ success: false, message: 'Incio de sessión incorrecto' });
+        console.log("bad")
+
+      }
+    }
+  });
+});
+
 
 // con.connect((err) => {
 //   if (err) throw err;
@@ -53,7 +85,7 @@ let images    = [];
 
 let filesVid = fs.readdirSync(__dirname + "\\assets\\videos");
 let filesWebAssets = fs.readdirSync(__dirname + "\\assets\\webAssets");
-let filesMovieImages = fs.readdirSync(__dirname + "\\assets\\imgs");
+// let filesMovieImages = fs.readdirSync(__dirname + "\\assets\\imgs");
 
 
 // const server = http.createServer((req, res) => {
