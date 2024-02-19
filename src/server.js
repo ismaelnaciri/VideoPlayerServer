@@ -19,10 +19,10 @@ const cors = require('cors');
 const configObj = JSON.parse(fs.readFileSync('ConnexioBD_MySQL', 'utf8'));
 
 const connexioMySQL = mysql.createConnection({
-  database : configObj.database,
-  user : configObj.username,
-  password : configObj.password,
-  host : configObj.host,
+  database: configObj.database,
+  user: configObj.username,
+  password: configObj.password,
+  host: configObj.host,
 
 });
 
@@ -42,7 +42,7 @@ app.listen(port, () => {
 });
 
 //Option 1 with express post
-app.post('/api/aouth', (req, res) => {
+app.post('/api/auth', (req, res) => {
   if (req.body) {
     let user = req.body;
     console.log("user | ", user);
@@ -52,6 +52,8 @@ app.post('/api/aouth', (req, res) => {
       user["iat"] = new Date().getTime();
       user["exp"] = user["iat"] + 31556926;  //value of 1 year in epoch time
       let token = jwt.sign(user, JWT_SECRET);
+
+      //Insert token to db
 
       res.status(200).send({
         code: 200,
@@ -64,13 +66,44 @@ app.post('/api/aouth', (req, res) => {
         message: "Wrong credentials. If the issue persists, please contact with support."
       })
     }
+  } else {
+    res.status(400).send({
+      code: 400,
+      message: "Post body cannot be empty!!"
+    });
   }
 });
 
+app.post('/api/register', (req, res) => {
+  if (req.body) {
+    let user = req.body;
 
-let videos    = [];
+    let queryResult = '';
+    if (queryResult.email !== '') {
+      //make insert into database
+
+      user["iat"] = new Date().getTime();
+      user["exp"] = user["iat"] + 31556926;  //value of 1 year in epoch time
+      let token = jwt.sign(user, JWT_SECRET);
+
+      res.status(200).send({
+        code: 200,
+        message: "User created successfully!",
+        token: token
+      });
+    }
+  } else {
+    res.status(400).send({
+      code: 400,
+      message: "Post body cannot be empty!!!!!!!!"
+    });
+  }
+})
+
+
+let videos = [];
 let webAssets = [];
-let images    = [];
+let images = [];
 
 let filesVid = fs.readdirSync(__dirname + "\\assets\\videos");
 let filesWebAssets = fs.readdirSync(__dirname + "\\assets\\webAssets");
@@ -135,12 +168,12 @@ filesVid.forEach(element => {
   if (element.split('.')[1] === 'mp4'
     || element.split('.')[1] === 'ogg') {
 
-      videos.push({
-        title: element,
-        videoUrl: "videos/" + element,
-        opened: false,
-        verified: undefined,
-      });
+    videos.push({
+      title: element,
+      videoUrl: "videos/" + element,
+      opened: false,
+      verified: undefined,
+    });
   }
 });
 
@@ -148,7 +181,7 @@ let serverCode;
 
 //Cannot nest socket.on!!!
 
-io.on("connection",(socket) => {
+io.on("connection", (socket) => {
   socket.join("verificationRoom");
   socket.emit("hello", "world");
 
@@ -197,7 +230,7 @@ io.on("connection",(socket) => {
     console.log("Android code: " + androidCodi);
 
     if (serverCode === androidCodi) {
-      console.log("WORKS?" ,serverCode===androidCodi)
+      console.log("WORKS?", serverCode === androidCodi)
       io.to("verificationRoom").emit("VerifiedCorrectly", true);
     } else {
       io.to("verificationRoom").emit("VerifiedCorrectly", false);
