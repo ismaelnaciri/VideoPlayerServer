@@ -64,9 +64,8 @@ app.listen(port, () => {
 //Option 1 with express post
 app.post('/api/auth', async (req, res) => {
   if (req.body) {
-    let user = req.body;
-    console.log("user | ", user);
-    let queryResult = '';
+    const user = req.body;
+    console.log(user.email + " " + user.password)
 
     const query = `SELECT *
                    FROM user
