@@ -14,6 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const cors = require('cors');
+const mysql = require('mysql2')
 
 //App server can't listen to the same port of sockets
 
@@ -175,5 +176,18 @@ function generateRandomString() {
 
   return randomString;
 }
+
+
+
+//BD connexió:
+const connection = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: 'patata',
+  database: 'stream_vi'
+});
+
+
+
 
 
