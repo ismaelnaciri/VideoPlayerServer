@@ -6,7 +6,6 @@ const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
 const port = 3000;
 
-
 const io = new Server(8888);
 
 const app = express();
@@ -15,78 +14,198 @@ const path = require('path');
 
 const cors = require('cors');
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-// app.use(cors)
 //App server can't listen to the same port of sockets
 
 const configObj = JSON.parse(fs.readFileSync('ConnexioBD_MySQL', 'utf8'));
 
 const connexioMySQL = mysql.createConnection({
-  database : configObj.database,
-  user : configObj.username,
-  password : configObj.password,
-  host : configObj.host,
+  database: configObj.database,
+  user: configObj.username,
+  password: configObj.password,
+  host: configObj.host,
 
 });
 
-app.post('/login', (req, res) => {
-  console.log("login")
-  const { email, passw } = req.body;
+let filesVid = fs.readdirSync(__dirname + "\\assets\\videos");
 
-  console.log(email + " " + passw)
+let videosTemp = [];
+let i = 1;
 
-  const consulta = `SELECT * FROM user WHERE user = '${email}' AND password = '${passw}'`;
+filesVid.forEach(element => {
+  if (element.split('.')[1] === 'mp4'
+    || element.split('.')[1] === 'ogg') {
 
-  connexioMySQL.query(consulta, (error, resultados) => {
-    if (error) {
-      res.status(500).json({ success: false, message: 'Error en la consulta SQL' });
-      console.log("Error")
-    } else {
-      if (resultados.length > 0) {
-        res.status(200).json({ success: true, message: 'Inicio de sesión correcto' });
-        console.log("good")
-        console.log(resultados)
-
-      } else {
-        res.status(401).json({ success: false, message: 'Incio de sessión incorrecto' });
-        console.log("bad")
-
-      }
-    }
-  });
+    i += 1;
+    videosTemp.push({
+      title: element,
+      videoUrl: "videos/" + element,
+      opened: false,
+      verified: undefined,
+      premium: i % 2 === 0 //If even true, if odd false
+    });
+  }
 });
-
 
 // con.connect((err) => {
 //   if (err) throw err;
 //   console.log("Conected to MySql");
 // });
 
+const JWT_SECRET = "bobbyVideoSite";
+
 app.use(cors());
 
 app.use(express.json());
 app.use(express.static("assets"));
-
-// app.post('/api/aouth', (req, res) => {
-//   if (req.body) {
-//     let
-//   }
-// })
 app.listen(port, () => {
   console.log(`El servidor està escoltant el port::${port}`);
 });
 
-const JWT_SECRET = "bobbyVideoSite"
+//Option 1 with express post
+app.post('/api/auth', async (req, res) => {
+  if (req.body) {
+    const user = req.body;
+    console.log(user.email + " " + user.password)
 
-let videos    = [];
+    const query = `SELECT *
+                   FROM user
+                   WHERE email = '${user.email}'
+                     AND password = '${user.password}'`;
+
+    await connexioMySQL.query(query, (error, resultados) => {
+      if (error) {
+        res.status(500).json({success: false, message: 'Error en la consulta SQL'});
+        console.log("Error")
+      } else {
+        if (resultados.length > 0) {
+          user["iat"] = new Date().getTime();
+          user["exp"] = user["iat"] + 31556926;
+
+          if (resultados[0].JsonWebToken !== '' && resultados[0].JsonWebToken !== null) {
+            res.status(200).send({
+              code: 200,
+              message: "Logged in correctly, sending jwt",
+              token: resultados[0].JsonWebToken,
+              user: user
+            });
+
+
+          } else {
+            let token = jwt.sign(user, JWT_SECRET);
+            //Insert token to db
+            const query = `UPDATE user
+                           SET JsonWebToken = ?
+                           WHERE email = ?
+                           AND password = ?`;
+            const values = [token, user.email, user.password];
+
+            connexioMySQL.query(query, values, (error, results, fields) => {
+              if (error) {
+                console.error('Error al insertar el token:', error);
+                return;
+              }
+              console.log('Token insertado correctamente en la base de datos.');
+              res.status(200).send({
+                code: 200,
+                message: "Logged in correctly, sending jwt",
+                token: token,
+                user: user
+              });
+            })
+          }
+
+        } else {
+          res.status(401).json({success: false, message: 'Inicio de sessión incorrecto'});
+          console.log("bad")
+        }
+      }
+    });
+
+  } else {
+    res.status(400).send({
+      code: 400,
+      message: "Post body cannot be empty!!"
+    });
+  }
+});
+
+let videosFinal = [];
+
+app.post('/api/videos', (req, res) => {
+  if (req.body) {
+    //Body should contain if users' rol, the jwt from storage and the secret
+    if (req.body.secret === JWT_SECRET) {
+      if (req.body.token !== null && req.body.token !== undefined && req.body.token !== '') {
+
+        jwt.verify(req.body.token, req.body.secret, '', (payload) => {
+          if (payload !== null && payload !== undefined && payload !== '') {
+            if (req.body.rol === "premium") {
+              videosTemp.forEach(element => {
+                videosFinal.push(element);
+              })
+
+              res.status(200).send({
+                code: 200,
+                message: "Premium Videos sent correctly!",
+                videos: videosFinal
+              })
+
+            } else if (req.body.rol === "standard") {
+              videosTemp.forEach(element => {
+                if (element.premium === false) {
+                  videosFinal.push(element);
+                }
+              })
+
+              res.status(200).send({
+                code: 200,
+                message: "Free Videos sent correctly!",
+                videos: videosFinal
+              })
+            }
+          }
+        });
+      }
+    } else {
+      res.status(403).send({
+        code: 403,
+        message: "Forbidden. Secret is different that of the server."
+      });
+    }
+  }
+});
+
+// app.post('/api/register', (req, res) => {
+//   if (req.body) {
+//     let user = req.body;
+//
+//     let queryResult = '';
+//     if (queryResult.email !== '') {
+//       //make insert into database
+//
+//       user["iat"] = new Date().getTime();
+//       user["exp"] = user["iat"] + 31556926;  //value of 1 year in epoch time
+//       let token = jwt.sign(user, JWT_SECRET);
+//
+//       res.status(200).send({
+//         code: 200,
+//         message: "User created successfully!",
+//         token: token
+//       });
+//     }
+//   } else {
+//     res.status(400).send({
+//       code: 400,
+//       message: "Post body cannot be empty!!!!!!!!"
+//     });
+//   }
+// })
+
 let webAssets = [];
-let images    = [];
+let images = [];
 
-let filesVid = fs.readdirSync(__dirname + "\\assets\\videos");
 let filesWebAssets = fs.readdirSync(__dirname + "\\assets\\webAssets");
-// let filesMovieImages = fs.readdirSync(__dirname + "\\assets\\imgs");
-
+let filesMovieImages = fs.readdirSync(__dirname + "\\assets\\imgs");
 
 // const server = http.createServer((req, res) => {
 //   const { headers, method, url } = req;
@@ -142,20 +261,6 @@ let filesWebAssets = fs.readdirSync(__dirname + "\\assets\\webAssets");
 // });
 
 
-filesVid.forEach(element => {
-  if (element.split('.')[1] === 'mp4'
-    || element.split('.')[1] === 'ogg') {
-
-      videos.push({
-        title: element,
-        videoUrl: "videos/" + element,
-        opened: false,
-        verified: undefined,
-      });
-  }
-});
-
-
 let serverCode;
 
 //Cannot nest socket.on!!!
@@ -168,8 +273,32 @@ io.on("connection", (socket) => {
   //   socket.emit("webImages", webAssets)
   // });
 
+  //Option 2 sockets jwt
+  // socket.on('userCredentials', (userCredentials) => {
+  //   //Make bd query here
+  //   let queryResult = '';
+  //
+  //   if (queryResult.email === userCredentials.email && queryResult.password === userCredentials.password) {
+  //     userCredentials["iat"] = new Date().getTime();
+  //     userCredentials["exp"] = userCredentials["iat"] + 31556926;  //value of 1 year in epoch time
+  //     let token = jwt.sign(userCredentials, JWT_SECRET);
+  //
+  //     socket.emit({
+  //       code: 200,
+  //       message: "Logged in correctly, sending token.",
+  //       token: token,
+  //       user: user
+  //     });
+  //   } else {
+  //     socket.emit({
+  //       code: 401,
+  //       message: "Wrong credentials. If the problem persists contact with support"
+  //     });
+  //   }
+  // });
+
   socket.on("RequestVideo", () => {
-    socket.emit("VideoList", videos);
+    socket.emit("VideoList", videosFinal);
   });
 
   socket.on("RequestVideoVerification", (args) => {
@@ -186,7 +315,7 @@ io.on("connection", (socket) => {
     console.log("Android code: " + androidCodi);
 
     if (serverCode === androidCodi) {
-      console.log("WORKS?" ,serverCode===androidCodi)
+      console.log("WORKS?", serverCode === androidCodi)
       io.to("verificationRoom").emit("VerifiedCorrectly", true);
     } else {
       io.to("verificationRoom").emit("VerifiedCorrectly", false);
