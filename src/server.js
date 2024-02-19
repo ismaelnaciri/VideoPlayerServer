@@ -46,10 +46,6 @@ filesVid.forEach(element => {
   }
 });
 
-// con.connect((err) => {
-//   if (err) throw err;
-//   console.log("Conected to MySql");
-// });
 
 const JWT_SECRET = "bobbyVideoSite";
 
@@ -175,90 +171,12 @@ app.post('/api/videos', (req, res) => {
   }
 });
 
-// app.post('/api/register', (req, res) => {
-//   if (req.body) {
-//     let user = req.body;
-//
-//     let queryResult = '';
-//     if (queryResult.email !== '') {
-//       //make insert into database
-//
-//       user["iat"] = new Date().getTime();
-//       user["exp"] = user["iat"] + 31556926;  //value of 1 year in epoch time
-//       let token = jwt.sign(user, JWT_SECRET);
-//
-//       res.status(200).send({
-//         code: 200,
-//         message: "User created successfully!",
-//         token: token
-//       });
-//     }
-//   } else {
-//     res.status(400).send({
-//       code: 400,
-//       message: "Post body cannot be empty!!!!!!!!"
-//     });
-//   }
-// })
 
 let webAssets = [];
 let images = [];
 
 let filesWebAssets = fs.readdirSync(__dirname + "\\assets\\webAssets");
 let filesMovieImages = fs.readdirSync(__dirname + "\\assets\\imgs");
-
-// const server = http.createServer((req, res) => {
-//   const { headers, method, url } = req;
-//   let body = [];
-//
-//   if (req.url === "/auth" && method === "POST") {
-//     req
-//       .on('error', err => {
-//         console.log("Error | ", err);
-//       })
-//       .on('data', chunk => {
-//         body.push(chunk);
-//         console.log(body);
-//
-//         let user = body[0].json();
-//         // user["exp"] = ;
-//         if (user.email === "queryResult.email" && user.password === "queryResult.password") {
-//           let token = jwt.sign(user, JWT_SECRET);
-//
-//           res.status(200).send({
-//             signed_user: user,
-//             token: token
-//           })
-//         }
-//     })
-//   }
-// }).use(bodyParser.json())
-//   .use(cors)
-//   .listen(7777);
-
-// filesWebAssets.forEach(element => {
-//   if (element.split('.')[1] === 'png'
-//     || element.split('.')[1] === 'jpg'
-//     || element.split('.')[1] === 'svg'
-//     || element.split('.')[1] === 'webp')
-//   {
-//     webAssets.push({
-//       title: element,
-//       assetUrl: "webAssets/" + element
-//     })
-//   }
-// });
-//
-// filesMovieImages.forEach(element => {
-//   if (element.split('.')[1] === 'png'
-//     || element.split('.')[1] === 'jpg')
-//   {
-//     images.push({
-//       title: element,
-//       imageUrl: "imgs/" + element
-//     })
-//   }
-// });
 
 
 let serverCode;
@@ -268,34 +186,6 @@ let serverCode;
 io.on("connection", (socket) => {
   socket.join("verificationRoom");
   socket.emit("hello", "world");
-
-  // socket.on("iniWebImages", () => {
-  //   socket.emit("webImages", webAssets)
-  // });
-
-  //Option 2 sockets jwt
-  // socket.on('userCredentials', (userCredentials) => {
-  //   //Make bd query here
-  //   let queryResult = '';
-  //
-  //   if (queryResult.email === userCredentials.email && queryResult.password === userCredentials.password) {
-  //     userCredentials["iat"] = new Date().getTime();
-  //     userCredentials["exp"] = userCredentials["iat"] + 31556926;  //value of 1 year in epoch time
-  //     let token = jwt.sign(userCredentials, JWT_SECRET);
-  //
-  //     socket.emit({
-  //       code: 200,
-  //       message: "Logged in correctly, sending token.",
-  //       token: token,
-  //       user: user
-  //     });
-  //   } else {
-  //     socket.emit({
-  //       code: 401,
-  //       message: "Wrong credentials. If the problem persists contact with support"
-  //     });
-  //   }
-  // });
 
   socket.on("RequestVideo", () => {
     socket.emit("VideoList", videosFinal);
