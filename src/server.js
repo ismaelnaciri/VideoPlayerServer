@@ -23,26 +23,26 @@ const connexioMySQL = mysql.createConnection({
   user: configObj.username,
   password: configObj.password,
   host: configObj.host,
-
+  port: configObj.port
 });
 
 let filesVid = fs.readdirSync(__dirname + "\\assets\\videos");
 
 let videosTemp = [];
-let i = 1;
+let i = 0;
 
 filesVid.forEach(element => {
   if (element.split('.')[1] === 'mp4'
     || element.split('.')[1] === 'ogg') {
 
-    i += 1;
     videosTemp.push({
       title: element,
       videoUrl: "videos/" + element,
       opened: false,
       verified: undefined,
-      premium: i % 2 === 0 //If even true, if odd false
+      premium: i % 2 === 0 // Si es par, es true, si es impar, es false
     });
+    i += 1;
   }
 });
 
@@ -79,7 +79,6 @@ app.post('/api/auth', async (req, res) => {
       } else {
         if (resultados.length > 0) {
           user["iat"] = new Date().getTime();
-          user["exp"] = user["iat"] + 31556926;
 
           if (resultados[0].JsonWebToken !== '' && resultados[0].JsonWebToken !== null) {
             res.status(200).send({
@@ -91,12 +90,14 @@ app.post('/api/auth', async (req, res) => {
 
 
           } else {
-            let token = jwt.sign(user, JWT_SECRET);
+            let token = jwt.sign(user, JWT_SECRET, {
+              expiresIn: '100 days'
+            });
             //Insert token to db
             const query = `UPDATE user
                            SET JsonWebToken = ?
                            WHERE email = ?
-                           AND password = ?`;
+                             AND password = ?`;
             const values = [token, user.email, user.password];
 
             connexioMySQL.query(query, values, (error, results, fields) => {
@@ -136,61 +137,77 @@ app.post('/api/auth', async (req, res) => {
 let videosFinal = [];
 
 app.get('/api/videos', (req, res) => {
-  let tokenHeader = req.headers["token"]
+  let tokenHeader = req.headers["token"];
+  console.log("headers  |  ", req.headers);
+  console.log("TOKEN   |  ", tokenHeader);
+  console.log()
   if (tokenHeader !== null && tokenHeader !== undefined && tokenHeader !== '') {
 
-    jwt.verify(tokenHeader, JWT_SECRET, '', (payload: any) => {
-      if (payload !== null && payload !== undefined && payload !== '') {
+    const payload = jwt.verify(tokenHeader, JWT_SECRET);
+    console.log("payload  |  ", payload);
+    if (payload !== null && payload !== undefined && payload !== '') {
 
-        const query = `SELECT * FROM user WHERE JsonWebToken = '${tokenHeader}'`;
+      const query = `SELECT *
+                     FROM user
+                     WHERE JsonWebToken = '${tokenHeader}'`;
 
-        connexioMySQL.query(query, (error, result) => {
-          if (error) {
-            res.status(500).send({
-              code: 500,
-              message: error.message
-            })
-          } else {
-            if (result.length > 0) {
-              //Returns expiration time of token in epoch time
-              let jwtExpirationTime = jwt.verify(result[0].JsonWebToken, JWT_SECRET, (result) => {
-                return result.exp;
-              });
+      connexioMySQL.query(query, (error, result) => {
+        if (error) {
+          res.status(500).send({
+            code: 500,
+            message: error.message
+          })
+        } else {
+          if (result.length > 0) {
+            videosFinal = [];
+            //Returns expiration time of token in epoch time
+            console.log("query result |  ", result);
+            let jwtExpirationTime = jwt.verify(result[0].JsonWebToken, JWT_SECRET);
+            console.log("jwt object from query   |   ", jwtExpirationTime);
 
-              if (result[0].rol === "premium" && jwtExpirationTime > new Date().getTime()) {
-                videosTemp.forEach(element => {
+
+            console.log("ROL   |   ", result[0].rol);
+
+            console.log("TESTTESTTEST  |  ", jwtExpirationTime.exp > new Date().getTime() / 1000);
+            if (result[0].rol === "premium" && jwtExpirationTime.exp > new Date().getTime() / 1000) {
+              console.log("INSIDE good result")
+              videosTemp.forEach(element => {
+                videosFinal.push(element);
+              })
+
+              res.status(200).send({
+                code: 200,
+                message: "Premium Videos sent correctly!",
+                videos: videosFinal
+              })
+
+              console.log("videos  |  ", videosFinal);
+            } else if (result[0].rol === "standard" && jwtExpirationTime.exp > new Date().getTime() / 1000) {
+              console.log("ENTER STANDARAD");
+              videosTemp.forEach(element => {
+                if (element.premium === false) {
                   videosFinal.push(element);
-                })
+                }
+              })
 
-                res.status(200).send({
-                  code: 200,
-                  message: "Premium Videos sent correctly!",
-                  videos: videosFinal
-                })
+              console.log("videos standrard  |  ", videosFinal);
 
-              } else if (result[0].rol === "standard" && jwtExpirationTime > new Date().getTime()) {
-                videosTemp.forEach(element => {
-                  if (element.premium === false) {
-                    videosFinal.push(element);
-                  }
-                })
-
-                res.status(200).send({
-                  code: 200,
-                  message: "Free Videos sent correctly!",
-                  videos: videosFinal
-                })
-              }
-            } else {
-              res.status(403).send({
-                code: 403,
-                message: "Invalid token. Please contact support for further instructions."
+              res.status(200).send({
+                code: 200,
+                message: "Free Videos sent correctly!",
+                videos: videosFinal
               })
             }
+          } else {
+            console.log("Empty result from query")
+            res.status(403).send({
+              code: 403,
+              message: "Invalid token. Please contact support for further instructions."
+            })
           }
-        })
-      }
-    });
+        }
+      })
+    }
   }
 });
 
