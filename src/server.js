@@ -68,10 +68,14 @@ app.post('/api/auth', async (req, res) => {
                    WHERE email = '${user.email}'
                      AND password = '${user.password}'`;
 
-    await connexioMySQL.query(query, (error, resultados) => {
+    connexioMySQL.query(query, (error, resultados) => {
       if (error) {
-        res.status(500).json({success: false, message: 'Error en la consulta SQL'});
-        console.log("Error")
+        res.status(500).send({
+          success: false,
+          message: 'Error en la consulta SQL'
+        });
+
+        console.log("Error whilst getting user")
       } else {
         if (resultados.length > 0) {
           user["iat"] = new Date().getTime();
@@ -97,6 +101,10 @@ app.post('/api/auth', async (req, res) => {
 
             connexioMySQL.query(query, values, (error, results, fields) => {
               if (error) {
+                res.status(500).send({
+                  code: 500,
+                  message: error.message
+                })
                 console.error('Error al insertar el token:', error);
                 return;
               }
@@ -127,47 +135,62 @@ app.post('/api/auth', async (req, res) => {
 
 let videosFinal = [];
 
-app.post('/api/videos', (req, res) => {
-  if (req.body) {
-    //Body should contain if users' rol, the jwt from storage and the secret
-    if (req.body.secret === JWT_SECRET) {
-      if (req.body.token !== null && req.body.token !== undefined && req.body.token !== '') {
+app.get('/api/videos', (req, res) => {
+  let tokenHeader = req.headers["token"]
+  if (tokenHeader !== null && tokenHeader !== undefined && tokenHeader !== '') {
 
-        jwt.verify(req.body.token, req.body.secret, '', (payload) => {
-          if (payload !== null && payload !== undefined && payload !== '') {
-            if (req.body.rol === "premium") {
-              videosTemp.forEach(element => {
-                videosFinal.push(element);
-              })
+    jwt.verify(tokenHeader, JWT_SECRET, '', (payload: any) => {
+      if (payload !== null && payload !== undefined && payload !== '') {
 
-              res.status(200).send({
-                code: 200,
-                message: "Premium Videos sent correctly!",
-                videos: videosFinal
-              })
+        const query = `SELECT * FROM user WHERE JsonWebToken = '${tokenHeader}'`;
 
-            } else if (req.body.rol === "standard") {
-              videosTemp.forEach(element => {
-                if (element.premium === false) {
+        connexioMySQL.query(query, (error, result) => {
+          if (error) {
+            res.status(500).send({
+              code: 500,
+              message: error.message
+            })
+          } else {
+            if (result.length > 0) {
+              //Returns expiration time of token in epoch time
+              let jwtExpirationTime = jwt.verify(result[0].JsonWebToken, JWT_SECRET, (result) => {
+                return result.exp;
+              });
+
+              if (result[0].rol === "premium" && jwtExpirationTime > new Date().getTime()) {
+                videosTemp.forEach(element => {
                   videosFinal.push(element);
-                }
-              })
+                })
 
-              res.status(200).send({
-                code: 200,
-                message: "Free Videos sent correctly!",
-                videos: videosFinal
+                res.status(200).send({
+                  code: 200,
+                  message: "Premium Videos sent correctly!",
+                  videos: videosFinal
+                })
+
+              } else if (result[0].rol === "standard" && jwtExpirationTime > new Date().getTime()) {
+                videosTemp.forEach(element => {
+                  if (element.premium === false) {
+                    videosFinal.push(element);
+                  }
+                })
+
+                res.status(200).send({
+                  code: 200,
+                  message: "Free Videos sent correctly!",
+                  videos: videosFinal
+                })
+              }
+            } else {
+              res.status(403).send({
+                code: 403,
+                message: "Invalid token. Please contact support for further instructions."
               })
             }
           }
-        });
+        })
       }
-    } else {
-      res.status(403).send({
-        code: 403,
-        message: "Forbidden. Secret is different that of the server."
-      });
-    }
+    });
   }
 });
 
@@ -175,8 +198,8 @@ app.post('/api/videos', (req, res) => {
 let webAssets = [];
 let images = [];
 
-let filesWebAssets = fs.readdirSync(__dirname + "\\assets\\webAssets");
-let filesMovieImages = fs.readdirSync(__dirname + "\\assets\\imgs");
+// let filesWebAssets = fs.readdirSync(__dirname + "\\assets\\webAssets");
+// let filesMovieImages = fs.readdirSync(__dirname + "\\assets\\imgs");
 
 
 let serverCode;
