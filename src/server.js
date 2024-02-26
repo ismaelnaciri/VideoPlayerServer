@@ -136,8 +136,11 @@ app.post('/api/auth', async (req, res) => {
 
 let videosFinal = [];
 
+let tokenTemp = "";
+
 app.get('/api/videos', (req, res) => {
   let tokenHeader = req.headers["token"];
+  tokenTemp = tokenHeader;
   console.log("headers  |  ", req.headers);
   console.log("TOKEN   |  ", tokenHeader);
   console.log()
@@ -228,7 +231,15 @@ io.on("connection", (socket) => {
   socket.emit("hello", "world");
 
   socket.on("RequestVideo", () => {
-    socket.emit("VideoList", videosFinal);
+    const payload = jwt.verify(tokenTemp, JWT_SECRET);
+    console.log("payload  |  ", payload);
+    if (payload !== null && payload !== undefined && payload !== '') {
+      socket.emit("VideoList", videosFinal);
+    } else {
+      console.log("ERROR  |  JWT not provided to socket event");
+    }
+
+
   });
 
   socket.on("RequestVideoVerification", (args) => {

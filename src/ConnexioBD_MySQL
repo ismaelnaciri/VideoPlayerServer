@@ -1,6 +1,7 @@
 {
   "database": "stream_vi",
-  "username": "root",
-  "password": "patata",
-  "host": "localhost"
+  "username": "isma",
+  "password": "IsmaElPro2002",
+  "host": "localhost",
+  "port": 3308
 }
